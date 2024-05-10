@@ -11,6 +11,7 @@ import numpy as np
 import copy
 import json
 import os
+import sys
 from torch.nn.functional import cosine_similarity
 import torch.nn.functional as F
 from transformers.generation.logits_process import (
@@ -31,13 +32,14 @@ minT=5
 Vt=0.8
 maxlen = 2048
 
-with open('f1.txt') as f:
+dir_path = os.path.dirname(os.path.realpath(__file__))
+with open(os.path.join(dir_path, 'f1.txt')) as f:
     fschat = f.read()
-with open('f2.txt') as f:
+with open(os.path.join(dir_path, 'f2.txt')) as f:
     fsred = f.read()
-with open('r1.txt') as f:
+with open(os.path.join(dir_path, 'r1.txt')) as f:
     redA = f.read()
-with open('r2.txt') as f:
+with open(os.path.join(dir_path, 'r2.txt')) as f:
     redB = f.read()
 
 encoder = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2').cuda()
@@ -98,10 +100,10 @@ def getv(getoken, model, tokenizer, dic, dicp, maxlen):
     score through self-evaluation
     '''
     text, simgstate = simg(dicp, getoken, model, tokenizer, maxlen)
-    inds = find_all_indices(text, 'Human:')
-    if len(inds) > 1 + 4:
-        text = text[:inds[1 + 4]]
-    text = text[inds[4]:]
+    # inds = find_all_indices(text, 'Human:')
+    # if len(inds) > 1 + 4:
+    #     text = text[:inds[1 + 4]]
+    # text = text[inds[4]:]
     if text not in dic:
         textA = fsred + '\n\n' + text + '\n' + redA
         textB = fsred + '\n\n' + text + '\n' + redB

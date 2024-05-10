@@ -8,6 +8,7 @@ Adapted from https://github.com/uw-nsl/SafeDecoding
 import torch
 import copy
 import logging
+import os
 from peft import PeftModel
 
 __all__ = ["safedecoding"]
@@ -30,7 +31,7 @@ def get_inputs(prompt, tokenizer, return_token_type_ids=True):
     return inputs
 
 
-def safedecoding(query, model, tokenizer):
+def safedecoding(query, model, tokenizer, **kwargs):
     """
     SafeDecoding is a decoding method that ensures the safety of the generated text.
 
@@ -38,11 +39,12 @@ def safedecoding(query, model, tokenizer):
     :param Any model: The model.
     :param Any tokenizer: The tokenizer.
     :return str: The generated text.
+    # TODO: 处理kwargs和下面的default args
     """
     # default args
     max_token_len = 1024
     first_m = 2
-    model_name = "meta-llama/Llama-2-7b-chat-hf"
+    model_name = "llama2"
     do_sample = False
     top_p = None
     top_k = 10
@@ -50,9 +52,9 @@ def safedecoding(query, model, tokenizer):
     verbose = False
     alpha = 3
 
-    inputs = get_inputs(query, tokenizer)
     # TODO: model不一样，这个model是有adapter的
-    model = PeftModel.from_pretrained(model, "/SafeDecoding/lora_modules/"+model_name, adapter_name="expert")
+    filedir = os.path.dirname(__file__)
+    model = PeftModel.from_pretrained(model, filedir+"/lora_modules/"+model_name, adapter_name="expert")
     adapter_names = ['base', 'expert']
 
     gen_config = model.generation_config
@@ -71,8 +73,9 @@ def safedecoding(query, model, tokenizer):
 
     generated_sequence = []
     if verbose:
-            logging.info(f"Generation config: {gen_config}")
+        logging.info(f"Generation config: {gen_config}")
 
+    inputs = get_inputs(query, tokenizer)
     inputs = {k:v.cuda(model.device) for k,v in inputs.items()}
     input_len = inputs['input_ids'].shape[1]
     
@@ -247,4 +250,4 @@ def safedecoding(query, model, tokenizer):
     # logging.info generated sequence
     logging.info(f"Generated sequence: {tokenizer.decode(generated_sequence)}")
 
-    return tokenizer.decode(generated_sequence), len(generated_sequence)
+    return tokenizer.decode(generated_sequence)
