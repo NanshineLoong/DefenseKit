@@ -1,5 +1,5 @@
 """
-InContextDefense(ICD)
+InContextReminder
 ===
 An InputDefenseModule
 Adapted from https://github.com/uw-nsl/SafeDecoding
@@ -9,9 +9,9 @@ from defensekit.defensemodule.defensemodule_base import InputDefenseModule
 from .refinerbase import RefinerBase
 
 
-class InContextDefense(RefinerBase, InputDefenseModule):
+class InContextReminder(RefinerBase, InputDefenseModule):
     """
-    InContextDefense is an input defense module that gives an example of how the model should behave.
+    InContextReminder is an input defense module that gives an example of how the model should behave.
     """
 
     def __init__(self):

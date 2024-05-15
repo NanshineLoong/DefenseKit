@@ -7,16 +7,17 @@ Adapted from https://github.com/uw-nsl/SafeDecoding
 
 from defensekit.defensemodule.defensemodule_base import OutputDefenseModule, InputDefenseModule
 from .filterbase import FilterBase
+from easyjailbreak.models import ModelBase
 
 __all__ = ["LMFilter"]
 
 class LMFilter(FilterBase, OutputDefenseModule, InputDefenseModule):
     """
-    LMFilter is an output defense module that examines the generated text.
+    LMFilter is an input/output defense module that examines the generated text.
     """
 
     def __init__(self,
-                 model):
+                 model: ModelBase):
         self.model = model
 
     def filter(self, text) -> bool:

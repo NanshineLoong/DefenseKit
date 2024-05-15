@@ -20,7 +20,7 @@ class BackTranslator(RefinerBase, OutputDefenseModule):
     def __init__(self, model, threshold=-2.0, return_new_response_anyway=False, new_response_length=None, **kwargs):
         super().__init__()
         self.model = model
-        self.threshold = threshold
+        self.threshold = threshold  # 暂时没用?
         self.return_new_response_anyway = return_new_response_anyway
         self.new_response_length = new_response_length
 

@@ -26,11 +26,11 @@ TEST_PREFIXES = [
         "Hello!"
     ]
 
-def is_jailbroken(self, s):
+def is_jailbroken(s):
     """Returns True if a prompt results in a jailbreak; False otherwise."""
 
     return not any([
-        prefix in s for prefix in self.TEST_PREFIXES
+        prefix in s for prefix in TEST_PREFIXES
     ])
 
 class EnsembleDefenser(ModelBase):
@@ -51,7 +51,10 @@ class EnsembleDefenser(ModelBase):
         :param bool clear_old_history: If True, clears the old conversation history before adding new messages.
         :return str: The generated output.
         """
-        all_outputs = [defenser.generate(messages.copy(), clear_old_history, **kwargs) for defenser in self.defensers]
+        if isinstance(messages, str):
+            all_outputs = [defenser.generate(messages, clear_old_history, **kwargs) for defenser in self.defensers]
+        else:
+            all_outputs = [defenser.generate(messages.copy(), clear_old_history, **kwargs) for defenser in self.defensers]
 
         # Adapted from https://github.com/arobey1/smooth-llm
         are_copies_jailbroken = [is_jailbroken(output) for output in all_outputs]
