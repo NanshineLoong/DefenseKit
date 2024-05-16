@@ -17,10 +17,13 @@ from defensekit.decoding import safedecoding
 
 import os
 
-attack_method = 'PAIR'  # Jailbroken, CodeChameleon, PAIR
-model_name = 'glm3'  # glm3, llama, vicuna, qwen
-defense_method = 'none' # none, selfdefense, backtranslate, smoothllm, safedecoding
-data_num = 1
+attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon, PAIR
+model_name = 'llama'  # glm3, llama, vicuna, qwen
+defense_method = 'lmfilter-backtranslator' # none, selfdefense, backtranslate, smoothllm, safedecoding, 
+# lmfilter-backtranslator, 
+# selfreminder-selfdefense, selfreminder-safedecoding-selfdefense
+# async-smoothllm
+data_num = 50
 
 result_file_path = f"results/AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
 if os.path.exists(result_file_path):
@@ -71,6 +74,36 @@ elif defense_method == "smoothllm":
 elif defense_method == "safedecoding":
     assert model_name == "llama", "Safe decoding is only supported for llama model."
     defensed_model = RegulatedDefenser(target_model, tokenizers, "llama-2", safedecoding)
+elif defense_method == "lmfilter-backtranslator":
+    defensed_model = Defenser(target_model, 
+                              input_defense_modules=[], 
+                              output_defense_modules=[LMFilter(model=target_model), 
+                                                      BackTranslator(model=target_model)])
+elif defense_method == "selfreminder-selfdefense":
+    defensed_model = Defenser(target_model, 
+                              input_defense_modules=[SelfReminder()], 
+                              output_defense_modules=[LMFilter(model=target_model)])
+elif defense_method == "selfreminder-safedecoding-selfdefense":
+    assert model_name == "llama", "Safe decoding is only supported for llama model."
+    regulated_model = RegulatedDefenser(target_model, tokenizers, "llama-2", safedecoding)
+    defensed_model = Defenser(regulated_model, 
+                              input_defense_modules=[SelfReminder()], 
+                              output_defense_modules=[LMFilter(model=target_model)])
+elif defense_method == "async-smoothllm":
+    defensed_model = EnsembleDefenser(
+        [Defenser(target_model, 
+                  input_defense_modules=
+                  [WordsPerturbator(pert_type="RandomSwapPerturbation")], 
+                  output_defense_modules=[]),
+         Defenser(target_model, 
+                  input_defense_modules=
+                  [WordsPerturbator(pert_pct="RandomPatchPerturbation")], 
+                  output_defense_modules=[]),
+         Defenser(target_model, 
+                  input_defense_modules=
+                  [WordsPerturbator(pert_pct="RandomInsertPerturbation")], 
+                  output_defense_modules=[]),         
+                  ])
 else:
     raise ValueError(f"Defense method {defense_method} is not supported.")
 
