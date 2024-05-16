@@ -1,62 +1,101 @@
-from easyjailbreak.attacker.PAIR_chao_2023 import PAIR
+# from easyjailbreak.attacker.PAIR_chao_2023 import PAIR
 from easyjailbreak.attacker.Jailbroken_wei_2023 import Jailbroken
-from easyjailbreak.attacker.ICA_wei_2023 import ICA
-from easyjailbreak.datasets import JailbreakDataset
-from easyjailbreak.models.huggingface_model import from_pretrained
+from easyjailbreak.attacker.CodeChameleon_2024 import *
+
 from easyjailbreak.models.openai_model import OpenaiModel
-from easyjailbreak.models.huggingface_model import HuggingfaceModel
 
-from defensekit.defenser.defenser import Defenser
-from defensekit.defensemodule.filter import LMFilter, PPLFilter, EraseAndChecker
-from defensekit.defensemodule.refiner import BackTranslator, InContextDefense, WordsPerturbator, SelfReminder, Paraphraser
+from defensekit.defenser import Defenser
+from defensekit.defenser import EnsembleDefenser
+from defensekit.defenser import RegulatedDefenser
 
-# First, prepare models and datasets.
-attack_model = OpenaiModel(model_name='glm-3-turbo',
-                         api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
-target_model = OpenaiModel(model_name='glm-3-turbo',
-                         api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
+from defensekit.defensemodule.filter import LMFilter
+from defensekit.defensemodule.refiner import BackTranslator
+from defensekit.defensemodule.refiner import WordsPerturbator
+from defensekit.defensemodule.refiner import SelfReminder
+from defensekit.decoding import safedecoding
 
-eval_model = OpenaiModel(model_name='glm-3-turbo',
-                         api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
-dataset = JailbreakDataset('AdvBench')[:3]
+import os
 
-# Defense
-# self_reminder = SelfReminder()
-# self_exam = LMFilter(model=eval_model)
-# erase_and_checker = EraseAndChecker(model=eval_model) # 有问题
-# ppl_filter = PPLFilter()  # 需要GPT-2？
-# back_translator = BackTranslator(model=eval_model)
-# in_context_defense = InContextDefense()
-words_perturbator = WordsPerturbator()
-target_model = Defenser(target_model, input_defense_modules=[words_perturbator])
+attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon
+model_name = 'glm3'  # glm3, llama, vicuna, qwen
+defense_method = 'none' # none, selfdefense, backtranslate, smoothllm, safedecoding
 
-# === ICA === #
-attacker = ICA(attack_model=attack_model,
-                target_model=target_model,
-                eval_model=eval_model,
-                jailbreak_datasets=dataset)
+result_file_path = f"results/AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
+if os.path.exists(result_file_path):
+    raise ValueError(f"Result file {result_file_path} already exists.")
 
-attacker.attack()
-attacker.attack_results.save_to_jsonl('AdvBench_ica.jsonl')
+# ==== Dataset === #
+from easyjailbreak.datasets import JailbreakDataset
+dataset = JailbreakDataset('AdvBench')[:50]
 
 
-# # === PAIR === #
-# # Then instantiate the recipe.
-# attacker = PAIR(attack_model=attack_model,
+# ==== Model === #
+closed_model = OpenaiModel(model_name='glm-3-turbo', api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
+
+eval_model = closed_model
+
+if model_name == "glm3":
+    target_model = closed_model
+else:
+    import torch
+    from easyjailbreak.models.huggingface_model import HuggingfaceModel
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    if model_name == "llama":
+        auto_model = AutoModelForCausalLM.from_pretrained('meta-llama/Llama-2-7b-chat-hf', device_map='auto', torch_dtype=torch.bfloat16)
+        tokenizers = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-chat-hf')
+        target_model = HuggingfaceModel(auto_model,tokenizers,'llama-2')
+    else:
+        raise ValueError(f"Model name {model_name} is not supported.")
+
+# === Defense === #
+if defense_method == "none" or defense_method == 'test':
+    defensed_model = target_model
+elif defense_method == "selfdefense":
+    defensed_model = Defenser(target_model, 
+                              input_defense_modules=[], 
+                              output_defense_modules=[LMFilter(model=target_model)])
+elif defense_method == "backtranslate":
+    defensed_model = Defenser(target_model, 
+                              input_defense_modules=[], 
+                              output_defense_modules=[BackTranslator(model=target_model)])
+elif defense_method == "smoothllm":
+    defensed_model = EnsembleDefenser(
+        [Defenser(target_model, 
+                  input_defense_modules=[WordsPerturbator()], 
+                  output_defense_modules=[]) for _ in range(3)])
+elif defense_method == "safedecoding":
+    assert model_name == "llama", "Safe decoding is only supported for llama model."
+    defensed_model = RegulatedDefenser(target_model, tokenizers, "llama-2", safedecoding)
+else:
+    raise ValueError(f"Defense method {defense_method} is not supported.")
+
+# === Attack === #
+if attack_method == "Jailbroken":
+
+    attacker = Jailbroken(attack_model=None,
+                          target_model=target_model,
+                          eval_model=eval_model,
+                          jailbreak_datasets=dataset)
+    attacker.attack()
+    attacker.log()
+    attacker.attack_results.save_to_jsonl(result_file_path)
+elif attack_method == "CodeChameleon":
+
+    attacker = CodeChameleon(attack_model=None,
+                  target_model=target_model,
+                  eval_model=eval_model,
+                  jailbreak_datasets=dataset)
+    attacker.attack()
+    attacker.log()
+    attacker.attack_results.save_to_jsonl(result_file_path)
+else:
+    raise ValueError(f"Attack method {attack_method} is not supported.")
+
+
+# attacker = PAIR(attack_model=model,
 #                 target_model=target_model,
-#                 eval_model=eval_model,
+#                 eval_model=model,
 #                 jailbreak_datasets=dataset)
 
-# # Finally, start jailbreaking.
-# attacker.attack(save_path='vicuna-13b-v1.5_gpt4_gpt4_AdvBench_result.jsonl')
-
-
-# # === Jailbroken === #
-# attacker = Jailbroken(attack_model=attack_model,
-#                         target_model=target_model,
-#                         eval_model=eval_model,
-#                         jailbreak_datasets=dataset)
-
-# attacker.attack()
-# attacker.log()
-# attacker.attack_results.save_to_jsonl('AdvBench_jailbroken.jsonl')
+# attacker.attack(save_path='AdvBench_pair_none.jsonl')
