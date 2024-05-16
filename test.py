@@ -1,8 +1,9 @@
-# from easyjailbreak.attacker.PAIR_chao_2023 import PAIR
+from easyjailbreak.attacker.PAIR_chao_2023 import PAIR
 from easyjailbreak.attacker.Jailbroken_wei_2023 import Jailbroken
 from easyjailbreak.attacker.CodeChameleon_2024 import *
 
 from easyjailbreak.models.openai_model import OpenaiModel
+from easyjailbreak.models.huggingface_model import from_pretrained
 
 from defensekit.defenser import Defenser
 from defensekit.defenser import EnsembleDefenser
@@ -16,9 +17,10 @@ from defensekit.decoding import safedecoding
 
 import os
 
-attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon
+attack_method = 'PAIR'  # Jailbroken, CodeChameleon, PAIR
 model_name = 'glm3'  # glm3, llama, vicuna, qwen
-defense_method = 'selfdefense' # none, selfdefense, backtranslate, smoothllm, safedecoding
+defense_method = 'none' # none, selfdefense, backtranslate, smoothllm, safedecoding
+data_num = 1
 
 result_file_path = f"results/AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
 if os.path.exists(result_file_path):
@@ -26,7 +28,7 @@ if os.path.exists(result_file_path):
 
 # ==== Dataset === #
 from easyjailbreak.datasets import JailbreakDataset
-dataset = JailbreakDataset('AdvBench')[:50]
+dataset = JailbreakDataset('AdvBench')[:data_num]
 
 
 # ==== Model === #
@@ -35,7 +37,7 @@ closed_model = OpenaiModel(model_name='glm-3-turbo', api_keys='a3f0ac96680ea6732
 eval_model = closed_model
 
 if model_name == "glm3":
-    target_model = closed_model
+    target_model = OpenaiModel(model_name='glm-3-turbo', api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
 else:
     import torch
     from easyjailbreak.models.huggingface_model import HuggingfaceModel
@@ -50,7 +52,9 @@ else:
 
 # === Defense === #
 if defense_method == "none" or defense_method == 'test':
-    defensed_model = target_model
+    defensed_model = Defenser(target_model, 
+                              input_defense_modules=[], 
+                              output_defense_modules=[])
 elif defense_method == "selfdefense":
     defensed_model = Defenser(target_model, 
                               input_defense_modules=[], 
@@ -72,7 +76,6 @@ else:
 
 # === Attack === #
 if attack_method == "Jailbroken":
-
     attacker = Jailbroken(attack_model=None,
                           target_model=defensed_model,
                           eval_model=eval_model,
@@ -81,7 +84,6 @@ if attack_method == "Jailbroken":
     attacker.log()
     attacker.attack_results.save_to_jsonl(result_file_path)
 elif attack_method == "CodeChameleon":
-
     attacker = CodeChameleon(attack_model=None,
                   target_model=defensed_model,
                   eval_model=eval_model,
@@ -89,6 +91,18 @@ elif attack_method == "CodeChameleon":
     attacker.attack()
     attacker.log()
     attacker.attack_results.save_to_jsonl(result_file_path)
+elif attack_method == "PAIR":
+    attack_model = from_pretrained(model_name_or_path='lmsys/vicuna-7b-v1.5',
+                               model_name='vicuna_v1.1')
+    attacker = PAIR(attack_model=attack_model,
+                    target_model=defensed_model,
+                    eval_model=eval_model,
+                    jailbreak_datasets=dataset,
+                    n_iterations=2,
+                    n_streams=2)
+    attacker.attack(save_path=result_file_path)
+elif attack_method == "AutoDan":
+    raise ValueError("Not prepared yet.")
 else:
     raise ValueError(f"Attack method {attack_method} is not supported.")
 

@@ -42,6 +42,10 @@ class EnsembleDefenser(ModelBase):
         super().__init__()
         self.defensers = defensers
 
+    @property
+    def tokenizer(self):
+        return self.defensers[0].tokenizer
+
     def generate(self, messages, clear_old_history=True, **kwargs) -> str:
         """
         Emsemble generates output based on input arguments.

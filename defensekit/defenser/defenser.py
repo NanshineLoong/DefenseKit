@@ -36,6 +36,9 @@ class Defenser(ModelBase):
             if not isinstance(module, OutputDefenseModule):
                 raise ValueError(f"{module} is not an OutputDefenseModule.")
             
+    @property
+    def tokenizer(self):
+        return self.model.tokenizer
 
     def generate(self, messages, clear_old_history=True, **kwargs) -> str:
         """
