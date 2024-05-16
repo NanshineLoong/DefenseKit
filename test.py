@@ -18,7 +18,7 @@ import os
 
 attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon
 model_name = 'glm3'  # glm3, llama, vicuna, qwen
-defense_method = 'none' # none, selfdefense, backtranslate, smoothllm, safedecoding
+defense_method = 'selfdefense' # none, selfdefense, backtranslate, smoothllm, safedecoding
 
 result_file_path = f"results/AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
 if os.path.exists(result_file_path):
@@ -74,7 +74,7 @@ else:
 if attack_method == "Jailbroken":
 
     attacker = Jailbroken(attack_model=None,
-                          target_model=target_model,
+                          target_model=defensed_model,
                           eval_model=eval_model,
                           jailbreak_datasets=dataset)
     attacker.attack()
@@ -83,7 +83,7 @@ if attack_method == "Jailbroken":
 elif attack_method == "CodeChameleon":
 
     attacker = CodeChameleon(attack_model=None,
-                  target_model=target_model,
+                  target_model=defensed_model,
                   eval_model=eval_model,
                   jailbreak_datasets=dataset)
     attacker.attack()
