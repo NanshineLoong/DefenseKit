@@ -66,6 +66,10 @@ for model_name in model_names:
                     auto_model = AutoModelForCausalLM.from_pretrained('meta-llama/Llama-2-7b-chat-hf', device_map='auto', torch_dtype=torch.bfloat16) if auto_model is None else auto_model
                     tokenizers = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7b-chat-hf') if tokenizers is None else tokenizers
                     target_model = HuggingfaceModel(auto_model,tokenizers,'llama-2')
+                elif model_name == "llama13":
+                    auto_model = AutoModelForCausalLM.from_pretrained('meta-llama/Llama-2-13b-chat-hf', device_map='auto', torch_dtype=torch.bfloat16) if auto_model is None else auto_model
+                    tokenizers = AutoTokenizer.from_pretrained('meta-llama/Llama-2-13b-chat-hf') if tokenizers is None else tokenizers
+                    target_model = HuggingfaceModel(auto_model,tokenizers,'llama-2')
                 elif model_name == "vicuna":
                     auto_model = AutoModelForCausalLM.from_pretrained('lmsys/vicuna-7b-v1.5', device_map='auto', torch_dtype=torch.bfloat16) if auto_model is None else auto_model
                     tokenizers = AutoTokenizer.from_pretrained('lmsys/vicuna-7b-v1.5') if tokenizers is None else tokenizers
