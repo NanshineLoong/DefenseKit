@@ -19,15 +19,15 @@ from defensekit.decoding import safedecoding
 import os
 
 attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon, PAIR
-model_name = 'llama'  # glm3, llama, 
+model_name = 'glm3'  # glm3, llama, 
 defense_method = 'lmfilter-backtranslator' # none, selfdefense, backtranslate, smoothllm, safedecoding, 
 # lmfilter-backtranslator, 
 # selfreminder-selfdefense, selfreminder-safedecoding-selfdefense
 # async-smoothllm
-data_num = 1
+data_num = 50
 
-defense_methods = ["none", "selfdefense", "backtranslate", "smoothllm", "safedecoding", "lmfilter-backtranslator", "selfreminder-selfdefense", "selfreminder-safedecoding-selfdefense", "async-smoothllm"]
-model_names = ["llama"]
+defense_methods = ["none", "selfdefense", "backtranslate", "smoothllm",  "lmfilter-backtranslator", "selfreminder-selfdefense", "async-smoothllm"]
+model_names = ["glm3"]
 attack_methods = ["jailbroken", "CodeChameleon", "ReNeLLM"]
 
 auto_model = None
@@ -37,7 +37,9 @@ for model_name in model_names:
     for attack_method in attack_methods:
         for defense_method in defense_methods:
             print(f"Attack: {attack_method}, Model: {model_name}, Defense: {defense_method}")
+            file_path = "AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
             result_file_path = f"results/AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
+            evaluate_file_path = f"evaluate/AdvBench_{attack_method}_{defense_method}_{model_name}.jsonl"
             if os.path.exists(result_file_path):
                 continue
 
@@ -47,7 +49,7 @@ for model_name in model_names:
 
 
             # ==== Model === #
-            closed_model = OpenaiModel(model_name='glm-3-turbo', api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
+            closed_model = OpenaiModel(model_name='glm-4', api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto')
 
             eval_model = closed_model
 
@@ -132,6 +134,7 @@ for model_name in model_names:
                 attacker.attack()
                 attacker.log()
                 attacker.attack_results.save_to_jsonl(result_file_path)
+                attacker.attack_results.save_to_jsonl(evaluate_file_path)
             elif attack_method == "CodeChameleon":
                 attacker = CodeChameleon(attack_model=None,
                             target_model=defensed_model,
@@ -140,6 +143,7 @@ for model_name in model_names:
                 attacker.attack()
                 attacker.log()
                 attacker.attack_results.save_to_jsonl(result_file_path)
+                attacker.attack_results.save_to_jsonl(evaluate_file_path)
             elif attack_method == "PAIR":
                 attack_model = from_pretrained(model_name_or_path='lmsys/vicuna-7b-v1.5',
                                         model_name='vicuna_v1.1')
@@ -154,9 +158,11 @@ for model_name in model_names:
                 attacker = ReNeLLM(attack_model=OpenaiModel(model_name='glm-3-turbo', api_keys='a3f0ac96680ea6732fb338792dc49300.sT499r9X5SBTVxto'),
                    target_model=defensed_model,
                    eval_model=eval_model,
-                   jailbreak_datasets=dataset)
+                   jailbreak_datasets=dataset,
+                   evo_max=2)
                 attacker.attack()
                 attacker.jailbreak_datasets.save_to_jsonl(result_file_path)
+                attacker.jailbreak_datasets.save_to_jsonl(evaluate_file_path)
             elif attack_method == "AutoDan":
                 raise ValueError("Not prepared yet.")
             else:
