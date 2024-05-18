@@ -17,6 +17,8 @@ from defensekit.defensemodule.refiner import SelfReminder
 from defensekit.decoding import safedecoding
 
 import os
+import logging
+logging.disable(logging.CRITICAL)
 
 attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon, PAIR
 model_name = 'glm3'  # glm3, llama, 
