@@ -28,8 +28,8 @@ defense_method = 'lmfilter-backtranslator' # none, selfdefense, backtranslate, s
 # async-smoothllm
 data_num = 50
 
-defense_methods = ["none", "selfdefense", "backtranslate", "smoothllm",  "lmfilter-backtranslator", "selfreminder-selfdefense", "async-smoothllm"]
-model_names = ["glm3"]
+defense_methods =  ["none", "selfdefense", "backtranslate", "smoothllm",  "lmfilter-backtranslator", "selfreminder-selfdefense", "async-smoothllm"]
+model_names = ["llama13"]
 attack_methods = ["jailbroken", "CodeChameleon", "ReNeLLM"]
 
 auto_model = None
@@ -96,7 +96,7 @@ for model_name in model_names:
                             input_defense_modules=[WordsPerturbator()], 
                             output_defense_modules=[]) for _ in range(3)])
             elif defense_method == "safedecoding":
-                assert model_name == "llama", "Safe decoding is only supported for llama model."
+                assert model_name == "llama" or model_name == "llama13", "Safe decoding is only supported for llama model."
                 defensed_model = RegulatedDefenser(auto_model, tokenizers, "llama-2", safedecoding)
             elif defense_method == "lmfilter-backtranslator":
                 defensed_model = Defenser(target_model, 
@@ -108,7 +108,7 @@ for model_name in model_names:
                                         input_defense_modules=[SelfReminder()], 
                                         output_defense_modules=[LMFilter(model=target_model)])
             elif defense_method == "selfreminder-safedecoding-selfdefense":
-                assert model_name == "llama", "Safe decoding is only supported for llama model."
+                assert model_name == "llama" or model_name == "llama13" , "Safe decoding is only supported for llama model."
                 regulated_model = RegulatedDefenser(auto_model, tokenizers, "llama-2", safedecoding)
                 defensed_model = Defenser(regulated_model, 
                                         input_defense_modules=[SelfReminder()], 
