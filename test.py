@@ -22,14 +22,15 @@ logging.disable(logging.CRITICAL)
 
 attack_method = 'CodeChameleon'  # Jailbroken, CodeChameleon, PAIR
 model_name = 'glm3'  # glm3, llama, 
-defense_method = 'lmfilter-backtranslator' # none, selfdefense, backtranslate, smoothllm, safedecoding, 
+defense_method = 'lmfilter-backtranslator' # none, self-reminder
+# selfdefense, backtranslate, smoothllm, safedecoding, 
 # lmfilter-backtranslator, 
 # selfreminder-selfdefense, selfreminder-safedecoding-selfdefense
 # async-smoothllm
 data_num = 50
 
-defense_methods =  ["none", "selfdefense", "backtranslate", "smoothllm",  "lmfilter-backtranslator", "selfreminder-selfdefense", "async-smoothllm"]
-model_names = ["llama13"]
+defense_methods =  ["none", "selfdefense", "backtranslate", "smoothllm",  "lmfilter-backtranslator", "selfreminder-selfdefense", "async-smoothllm", "wordsperturb", "self-reminder"]
+model_names = ["glm3"]
 attack_methods = ["jailbroken", "CodeChameleon", "ReNeLLM"]
 
 auto_model = None
@@ -128,6 +129,14 @@ for model_name in model_names:
                             [WordsPerturbator(pert_type="RandomInsertPerturbation")], 
                             output_defense_modules=[]),         
                             ])
+            elif defense_method == "wordsperturb":
+                defensed_model = Defenser(target_model, 
+                                        input_defense_modules=[WordsPerturbator()], 
+                                        output_defense_modules=[])
+            elif defense_method == "self-reminder":
+                defensed_model = Defenser(target_model, 
+                                        input_defense_modules=[SelfReminder()], 
+                                        output_defense_modules=[])
             else:
                 raise ValueError(f"Defense method {defense_method} is not supported.")
 
