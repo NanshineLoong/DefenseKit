@@ -1,4 +1,4 @@
-from transformers import AutoProcessor, LlavaForConditionalGeneration
+from transformers import AutoProcessor, LlavaForConditionalGeneration, Qwen2VLForConditionalGeneration, LlavaNextForConditionalGeneration
 import torch
 from peft import PeftModel
 import torch.nn.functional as F
@@ -8,7 +8,7 @@ from .base_model import BaseModel
 from defensekit.utils import OPTION_ID
 
 class HFModel(BaseModel):
-    def __init__(self, args, model_class, max_new_tokens=1000):
+    def __init__(self, args, model_class, max_new_tokens=512):
         """
         Initialize the HFModel with a specific model class.
 
@@ -48,7 +48,7 @@ class HFModel(BaseModel):
             args.model_name,
             torch_dtype=torch.float16,
             low_cpu_mem_usage=True,
-             attn_implementation="flash_attention_2",
+            attn_implementation="flash_attention_2",
         ).to(int(args.device)).eval()
 
 
@@ -88,9 +88,10 @@ class HFModel(BaseModel):
             })
 
         content = instance.classification_prompt.replace('[[query]]', instance.question) if instance.classification_prompt else instance.question
-        user_content = [{"type": "text", "text": content}]
+        user_content = []
         if instance.image:
             user_content.append({"type": "image"})
+        user_content.append({"type": "text", "text": content})
         
         conversation.append({
             "role": "user",
@@ -151,12 +152,24 @@ class LLaVA(HFModel):
         # self.processor.vision_feature_select_strategy = 'default'
         self.processor.tokenizer.padding_side = 'left'
 
-# class Qwen(HFModel):
-#     def __init__(self, args):
-#         """
-#         Initialize the Qwen model.
+class Qwen(HFModel):
+    def __init__(self, args):
+        """
+        Initialize the Qwen model.
 
-#         Args:
-#             args: Configuration arguments.
-#         """
-#         super().__init__(args, Qwen2VLForConditionalGeneration)
+        Args:
+            args: Configuration arguments.
+        """
+        super().__init__(args, Qwen2VLForConditionalGeneration)
+
+
+class LLaVA_Next(HFModel):
+    def __init__(self, args):
+        """
+        Initialize the LLaVA_Next model.
+
+        Args:
+            args: Configuration arguments.
+        """
+        super().__init__(args, LlavaNextForConditionalGeneration)
+        self.processor.tokenizer.padding_side = 'left'

@@ -7,14 +7,14 @@ from defensekit.evaluate import Evaluator
 def parse_args():
     parser = argparse.ArgumentParser(description="defense")
     # evaluated model
-    parser.add_argument("--model_name", type=str, default='llava-hf/llava-1.5-7b-hf', help="Model being evaluated")
+    parser.add_argument("--model_name", type=str, default='llava-hf/llava-1.5-13b-hf', help="Model being evaluated")
     parser.add_argument('--use_adapter', action='store_true', help='Use adapter')
     parser.add_argument('--no-use_adapter', dest='use_adapter', action='store_false', help='Do not use adapter')
     parser.add_argument("--adapter_dir", type=str, default='./resources/adapter/llava-7b', help="Adapter directory")
     parser.add_argument("--device", type=str, default='0', help="Device")  # 0, 1, 2, 3, auto
 
     # dataset
-    parser.add_argument("--dataset_path", type=str, default='./datasets/mmsafetybench/train.json', help="Dataset Path")
+    parser.add_argument("--dataset_path", type=str, default='./datasets/jailbreakv/test.json', help="Dataset Path")
 
     # defense
     parser.add_argument("--input_defense_strategy", type=str, default='', help="Input Defense Strategy")
@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument("--output_defense_strategy", type=str, default='', help="Output Defenser Strategy")
 
     # task
-    parser.add_argument("--task", type=str, default='classification',choices=["generation", "classification", "both"], help="Task")  #
+    parser.add_argument("--task", type=str, default='generation',choices=["generation", "classification", "both"], help="Task")  #
 
     # evaluation
     parser.add_argument("--batch_size", type=int, default=10, help="Batch Size")
